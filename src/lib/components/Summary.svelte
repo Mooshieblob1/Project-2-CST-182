@@ -14,13 +14,41 @@
 
 	let { transactions }: Props = $props();
 
-	// Calculate financial summary
-	let summary = $derived(() => {
-		const income = transactions
+	function formatCurrency(amount: number): string {
+		return new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency: 'USD'
+		}).format(amount);
+	}
+
+	let selectedTimeRange = $state('all');
+
+	// Filter transactions based on time range
+	let filteredTransactions = $derived(() => {
+		const now = new Date();
+		switch (selectedTimeRange) {
+			case 'week':
+				const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+				return transactions.filter((t) => new Date(t.date) >= weekAgo);
+			case 'month':
+				const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+				return transactions.filter((t) => new Date(t.date) >= monthAgo);
+			case 'quarter':
+				const quarterAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+				return transactions.filter((t) => new Date(t.date) >= quarterAgo);
+			default:
+				return transactions;
+		}
+	});
+
+	// Calculate filtered summary
+	let filteredSummary = $derived(() => {
+		const filtered = filteredTransactions();
+		const income = filtered
 			.filter((t) => t.type === 'income')
 			.reduce((sum, t) => sum + t.amount, 0);
 
-		const expenses = transactions
+		const expenses = filtered
 			.filter((t) => t.type === 'expense')
 			.reduce((sum, t) => sum + t.amount, 0);
 
@@ -30,100 +58,6 @@
 	});
 
 	// Calculate expense breakdown by category
-	let expenseByCategory = $derived(() => {
-		const categoryTotals: Record<string, number> = {};
-
-		transactions
-			.filter((t) => t.type === 'expense')
-			.forEach((t) => {
-				categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-			});
-
-		return Object.entries(categoryTotals)
-			.map(([category, amount]) => ({ category, amount }))
-			.sort((a, b) => b.amount - a.amount);
-	});
-
-	// Calculate income breakdown by category
-	let incomeByCategory = $derived(() => {
-		const categoryTotals: Record<string, number> = {};
-
-		transactions
-			.filter((t) => t.type === 'income')
-			.forEach((t) => {
-				categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
-			});
-
-		return Object.entries(categoryTotals)
-			.map(([category, amount]) => ({ category, amount }))
-			.sort((a, b) => b.amount - a.amount);
-	});
-
-	function formatCurrency(amount: number): string {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD'
-		}).format(amount);
-	}
-
-	// Date filter options
-	let dateFilter = $state('all');
-	let customStartDate = $state('');
-	let customEndDate = $state('');
-
-	// Filtered transactions based on date
-	let filteredTransactions = $derived(() => {
-		if (dateFilter === 'all') return transactions;
-
-		const now = new Date();
-		let startDate: Date;
-		let endDate = now;
-
-		switch (dateFilter) {
-			case 'week':
-				startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-				break;
-			case 'month':
-				startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-				break;
-			case 'quarter':
-				const quarter = Math.floor(now.getMonth() / 3);
-				startDate = new Date(now.getFullYear(), quarter * 3, 1);
-				break;
-			case 'year':
-				startDate = new Date(now.getFullYear(), 0, 1);
-				break;
-			case 'custom':
-				if (!customStartDate || !customEndDate) return transactions;
-				startDate = new Date(customStartDate);
-				endDate = new Date(customEndDate);
-				endDate.setHours(23, 59, 59, 999); // End of day
-				break;
-			default:
-				return transactions;
-		}
-
-		return transactions.filter((t) => {
-			const transactionDate = new Date(t.date);
-			return transactionDate >= startDate && transactionDate <= endDate;
-		});
-	});
-
-	// Update calculations to use filtered transactions
-	let summary = $derived(() => {
-		const income = filteredTransactions()
-			.filter((t) => t.type === 'income')
-			.reduce((sum, t) => sum + t.amount, 0);
-
-		const expenses = filteredTransactions()
-			.filter((t) => t.type === 'expense')
-			.reduce((sum, t) => sum + t.amount, 0);
-
-		const balance = income - expenses;
-
-		return { income, expenses, balance };
-	});
-
 	let expenseByCategory = $derived(() => {
 		const categoryTotals: Record<string, number> = {};
 
@@ -138,6 +72,7 @@
 			.sort((a, b) => b.amount - a.amount);
 	});
 
+	// Calculate income breakdown by category
 	let incomeByCategory = $derived(() => {
 		const categoryTotals: Record<string, number> = {};
 
@@ -288,42 +223,6 @@
 					? expenseTransactions.reduce((max, t) => (t.amount > max.amount ? t : max))
 					: null
 		};
-	});
-
-	let selectedTimeRange = $state('all');
-
-	// Filter transactions based on time range
-	let filteredTransactions = $derived(() => {
-		const now = new Date();
-		switch (selectedTimeRange) {
-			case 'week':
-				const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-				return transactions.filter((t) => new Date(t.date) >= weekAgo);
-			case 'month':
-				const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-				return transactions.filter((t) => new Date(t.date) >= monthAgo);
-			case 'quarter':
-				const quarterAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-				return transactions.filter((t) => new Date(t.date) >= quarterAgo);
-			default:
-				return transactions;
-		}
-	});
-
-	// Recalculate summary based on filtered transactions
-	let filteredSummary = $derived(() => {
-		const filtered = filteredTransactions();
-		const income = filtered
-			.filter((t: Transaction) => t.type === 'income')
-			.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
-
-		const expenses = filtered
-			.filter((t: Transaction) => t.type === 'expense')
-			.reduce((sum: number, t: Transaction) => sum + t.amount, 0);
-
-		const balance = income - expenses;
-
-		return { income, expenses, balance };
 	});
 </script>
 
