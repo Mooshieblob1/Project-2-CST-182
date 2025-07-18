@@ -1,1 +1,129 @@
 @import 'tailwindcss';
+
+/* Custom CSS variables for colors not in Tailwind v4 */
+:root {
+	--color-gray-750: oklch(32% 0.035 258);
+}
+
+/* Force class-based dark mode override for Tailwind v4 */
+.dark {
+	/* Override Tailwind's media query based dark mode */
+	--tw-dark-mode: 1;
+}
+
+/* Custom dark mode styles to override Tailwind v4 media queries */
+.dark .bg-white {
+	background-color: var(--color-gray-800) !important;
+}
+
+.dark .text-gray-800 {
+	color: var(--color-white) !important;
+}
+
+.dark .text-gray-700 {
+	color: var(--color-gray-200) !important;
+}
+
+.dark .text-gray-600 {
+	color: var(--color-gray-300) !important;
+}
+
+.dark .text-gray-500 {
+	color: var(--color-gray-400) !important;
+}
+
+.dark .border-gray-300 {
+	border-color: var(--color-gray-600) !important;
+}
+
+.dark .border-gray-200 {
+	border-color: var(--color-gray-700) !important;
+}
+
+.dark .bg-gray-100 {
+	background-color: var(--color-gray-700) !important;
+}
+
+.dark .bg-gray-50 {
+	background-color: var(--color-gray-800) !important;
+}
+
+.dark .bg-gray-200 {
+	background-color: var(--color-gray-600) !important;
+}
+
+/* Navigation and tab styles */
+.dark .bg-white.p-1.shadow-md {
+	background-color: var(--color-gray-800) !important;
+}
+
+/* Input and form styles */
+.dark input[type='text'],
+.dark input[type='number'],
+.dark input[type='date'],
+.dark select,
+.dark textarea {
+	background-color: var(--color-gray-700) !important;
+	color: var(--color-white) !important;
+	border-color: var(--color-gray-600) !important;
+}
+
+/* Hover states */
+.dark .hover\:bg-gray-50:hover {
+	background-color: var(--color-gray-600) !important;
+}
+
+.dark .hover\:bg-gray-100:hover {
+	background-color: var(--color-gray-600) !important;
+}
+
+.dark .hover\:bg-gray-200:hover {
+	background-color: var(--color-gray-500) !important;
+}
+
+.dark .hover\:text-gray-800:hover {
+	color: var(--color-gray-200) !important;
+}
+
+/* Table styles */
+.dark .bg-gray-25 {
+	background-color: var(--color-gray-750) !important;
+}
+
+/* Button and interactive elements */
+.dark .bg-gray-100 {
+	background-color: var(--color-gray-600) !important;
+}
+
+.dark
+	.text-gray-700:not(.text-green-700):not(.text-red-700):not(.text-blue-700):not(.text-yellow-700) {
+	color: var(--color-gray-300) !important;
+}
+
+/* Global theme transition for smooth dark mode switching */
+* {
+	transition:
+		background-color 0.2s ease-in-out,
+		border-color 0.2s ease-in-out,
+		color 0.2s ease-in-out;
+}
+
+/* Root element styling */
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	transition:
+		background-color 0.2s ease-in-out,
+		color 0.2s ease-in-out;
+}
+
+/* Ensure proper color scheme for dark mode */
+html.dark {
+	color-scheme: dark;
+}
+
+html {
+	color-scheme: light;
+}

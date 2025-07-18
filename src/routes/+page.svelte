@@ -5,12 +5,15 @@
 	import EnhancedTransactionList from '$lib/components/EnhancedTransactionList.svelte';
 	import Summary from '$lib/components/Summary.svelte';
 	import EnhancedSummary from '$lib/components/EnhancedSummary.svelte';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { transactionStore } from '$lib/stores/transactions';
+	import { themeStore } from '$lib/stores/theme';
 	import { loadTransactionsFromCSV, parseCSV } from '$lib/csvLoader';
 	import type { Transaction } from '$lib/stores/transactions';
 
 	let activeTab = $state('add');
 	let transactions = $derived($transactionStore);
+	let theme = $derived($themeStore);
 
 	// Save to localStorage whenever transactions change
 	$effect(() => {
@@ -191,22 +194,31 @@
 	/>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+<div
+	class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800"
+>
 	<div class="container mx-auto px-4 py-8">
 		<!-- Header -->
-		<div class="mb-8 text-center">
-			<h1 class="mb-2 text-4xl font-bold text-gray-800">Personal Finance Tracker</h1>
-			<p class="text-gray-600">Manage your income and expenses with ease</p>
+		<div class="mb-8 flex items-center justify-between">
+			<div class="flex-1 text-center">
+				<h1 class="mb-2 text-4xl font-bold text-gray-800 dark:text-white">
+					Personal Finance Tracker
+				</h1>
+				<p class="text-gray-600 dark:text-gray-300">Manage your income and expenses with ease</p>
+			</div>
+			<div class="ml-4">
+				<ThemeToggle />
+			</div>
 		</div>
 
 		<!-- Navigation Tabs -->
 		<div class="mb-8 flex justify-center">
-			<div class="rounded-lg bg-white p-1 shadow-md">
+			<div class="rounded-lg bg-white p-1 shadow-md dark:bg-gray-800">
 				<button
 					class={`rounded-md px-6 py-3 font-medium transition-all duration-200 ${
 						activeTab === 'add'
 							? 'bg-blue-500 text-white shadow-md'
-							: 'text-gray-600 hover:text-blue-500'
+							: 'text-gray-600 hover:text-blue-500 dark:text-gray-300 dark:hover:text-blue-400'
 					}`}
 					onclick={() => setActiveTab('add')}
 				>
@@ -216,7 +228,7 @@
 					class={`rounded-md px-6 py-3 font-medium transition-all duration-200 ${
 						activeTab === 'summary'
 							? 'bg-blue-500 text-white shadow-md'
-							: 'text-gray-600 hover:text-blue-500'
+							: 'text-gray-600 hover:text-blue-500 dark:text-gray-300 dark:hover:text-blue-400'
 					}`}
 					onclick={() => setActiveTab('summary')}
 				>
@@ -226,7 +238,7 @@
 					class={`rounded-md px-6 py-3 font-medium transition-all duration-200 ${
 						activeTab === 'analytics'
 							? 'bg-blue-500 text-white shadow-md'
-							: 'text-gray-600 hover:text-blue-500'
+							: 'text-gray-600 hover:text-blue-500 dark:text-gray-300 dark:hover:text-blue-400'
 					}`}
 					onclick={() => setActiveTab('analytics')}
 				>
@@ -236,7 +248,7 @@
 					class={`rounded-md px-6 py-3 font-medium transition-all duration-200 ${
 						activeTab === 'transactions'
 							? 'bg-blue-500 text-white shadow-md'
-							: 'text-gray-600 hover:text-blue-500'
+							: 'text-gray-600 hover:text-blue-500 dark:text-gray-300 dark:hover:text-blue-400'
 					}`}
 					onclick={() => setActiveTab('transactions')}
 				>
@@ -246,7 +258,7 @@
 					class={`rounded-md px-6 py-3 font-medium transition-all duration-200 ${
 						activeTab === 'manage'
 							? 'bg-blue-500 text-white shadow-md'
-							: 'text-gray-600 hover:text-blue-500'
+							: 'text-gray-600 hover:text-blue-500 dark:text-gray-300 dark:hover:text-blue-400'
 					}`}
 					onclick={() => setActiveTab('manage')}
 				>
@@ -256,7 +268,7 @@
 					class={`rounded-md px-6 py-3 font-medium transition-all duration-200 ${
 						activeTab === 'data'
 							? 'bg-blue-500 text-white shadow-md'
-							: 'text-gray-600 hover:text-blue-500'
+							: 'text-gray-600 hover:text-blue-500 dark:text-gray-300 dark:hover:text-blue-400'
 					}`}
 					onclick={() => setActiveTab('data')}
 				>
@@ -281,16 +293,20 @@
 				<!-- Data Import/Export Section -->
 				<div class="space-y-6">
 					<!-- CSV Operations -->
-					<div class="rounded-lg bg-white p-6 shadow-lg">
-						<h2 class="mb-6 text-2xl font-bold text-gray-800">Data Management</h2>
+					<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+						<h2 class="mb-6 text-2xl font-bold text-gray-800 dark:text-white">Data Management</h2>
 
 						<!-- Import Section -->
 						<div class="mb-8">
-							<h3 class="mb-4 text-lg font-semibold text-gray-700">Import Data</h3>
+							<h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
+								Import Data
+							</h3>
 							<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-								<div class="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center">
+								<div
+									class="rounded-lg border-2 border-dashed border-gray-300 p-6 text-center dark:border-gray-600"
+								>
 									<svg
-										class="mx-auto mb-4 h-12 w-12 text-gray-400"
+										class="mx-auto mb-4 h-12 w-12 text-gray-400 dark:text-gray-500"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -302,8 +318,12 @@
 											d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
 										></path>
 									</svg>
-									<h4 class="mb-2 text-lg font-medium text-gray-700">Upload CSV File</h4>
-									<p class="mb-4 text-gray-500">Import transactions from a CSV file</p>
+									<h4 class="mb-2 text-lg font-medium text-gray-700 dark:text-gray-300">
+										Upload CSV File
+									</h4>
+									<p class="mb-4 text-gray-500 dark:text-gray-400">
+										Import transactions from a CSV file
+									</p>
 									<input
 										type="file"
 										accept=".csv"
@@ -319,9 +339,11 @@
 									</label>
 								</div>
 
-								<div class="rounded-lg border-2 border-dashed border-green-300 p-6 text-center">
+								<div
+									class="rounded-lg border-2 border-dashed border-green-300 p-6 text-center dark:border-green-600"
+								>
 									<svg
-										class="mx-auto mb-4 h-12 w-12 text-green-400"
+										class="mx-auto mb-4 h-12 w-12 text-green-400 dark:text-green-500"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -333,8 +355,12 @@
 											d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 										></path>
 									</svg>
-									<h4 class="mb-2 text-lg font-medium text-gray-700">Load Default CSV</h4>
-									<p class="mb-4 text-gray-500">Load transactions from default CSV file</p>
+									<h4 class="mb-2 text-lg font-medium text-gray-700 dark:text-gray-300">
+										Load Default CSV
+									</h4>
+									<p class="mb-4 text-gray-500 dark:text-gray-400">
+										Load transactions from default CSV file
+									</p>
 									<button
 										onclick={loadCSVData}
 										class="rounded-lg bg-green-500 px-4 py-2 text-white transition-colors hover:bg-green-600"
@@ -343,9 +369,11 @@
 									</button>
 								</div>
 
-								<div class="rounded-lg border-2 border-dashed border-orange-300 p-6 text-center">
+								<div
+									class="rounded-lg border-2 border-dashed border-orange-300 p-6 text-center dark:border-orange-600"
+								>
 									<svg
-										class="mx-auto mb-4 h-12 w-12 text-orange-400"
+										class="mx-auto mb-4 h-12 w-12 text-orange-400 dark:text-orange-500"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -357,8 +385,12 @@
 											d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
 										></path>
 									</svg>
-									<h4 class="mb-2 text-lg font-medium text-gray-700">Reset & Reload</h4>
-									<p class="mb-4 text-gray-500">Clear all data and reload from CSV</p>
+									<h4 class="mb-2 text-lg font-medium text-gray-700 dark:text-gray-300">
+										Reset & Reload
+									</h4>
+									<p class="mb-4 text-gray-500 dark:text-gray-400">
+										Clear all data and reload from CSV
+									</p>
 									<button
 										onclick={resetAndReloadFromCSV}
 										class="rounded-lg bg-orange-500 px-4 py-2 text-white transition-colors hover:bg-orange-600"
@@ -371,19 +403,21 @@
 
 						<!-- Export Section -->
 						<div class="mb-8">
-							<h3 class="mb-4 text-lg font-semibold text-gray-700">Export Data</h3>
-							<div class="rounded-lg bg-gray-50 p-6">
+							<h3 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">
+								Export Data
+							</h3>
+							<div class="rounded-lg bg-gray-50 p-6 dark:bg-gray-700">
 								<div class="flex items-center justify-between">
 									<div>
-										<h4 class="font-medium text-gray-700">Export to CSV</h4>
-										<p class="text-sm text-gray-500">
+										<h4 class="font-medium text-gray-700 dark:text-gray-300">Export to CSV</h4>
+										<p class="text-sm text-gray-500 dark:text-gray-400">
 											Download all your transactions as a CSV file
 										</p>
 									</div>
 									<button
 										onclick={downloadTransactions}
 										disabled={transactions.length === 0}
-										class="flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:bg-gray-300"
+										class="flex items-center gap-2 rounded-lg bg-purple-500 px-4 py-2 text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:bg-gray-300 dark:disabled:bg-gray-600"
 									>
 										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path

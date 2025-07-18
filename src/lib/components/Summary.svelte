@@ -87,15 +87,15 @@
 
 <div class="space-y-6">
 	<!-- Time Range Filter -->
-	<div class="rounded-lg bg-white p-4 shadow-lg">
-		<h3 class="mb-3 text-lg font-semibold text-gray-800">Time Range</h3>
+	<div class="rounded-lg bg-white p-4 shadow-lg dark:bg-gray-800">
+		<h3 class="mb-3 text-lg font-semibold text-gray-800 dark:text-white">Time Range</h3>
 		<div class="flex flex-wrap gap-2">
 			<button
 				onclick={() => (selectedTimeRange = 'all')}
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					selectedTimeRange === 'all'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 			>
 				All Time
@@ -105,7 +105,7 @@
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					selectedTimeRange === 'week'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 			>
 				Last 7 Days
@@ -115,7 +115,7 @@
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					selectedTimeRange === 'month'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 			>
 				Last 30 Days
@@ -125,7 +125,7 @@
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					selectedTimeRange === 'quarter'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 			>
 				Last 90 Days
@@ -136,7 +136,7 @@
 	<!-- Financial Overview Cards -->
 	<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
 		<!-- Total Income -->
-		<div class="rounded-lg border-l-4 border-green-500 bg-white p-6 shadow-lg">
+		<div class="rounded-lg border-l-4 border-green-500 bg-white p-6 shadow-lg dark:bg-gray-800">
 			<div class="flex items-center">
 				<div class="flex-shrink-0">
 					<svg class="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,12 +149,12 @@
 					</svg>
 				</div>
 				<div class="ml-4">
-					<p class="text-sm font-medium text-gray-600">Total Income</p>
+					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Income</p>
 					<p class="text-2xl font-bold text-green-600">
 						{formatCurrency(filteredSummary().income)}
 					</p>
 					{#if selectedTimeRange !== 'all'}
-						<p class="text-xs text-gray-500">
+						<p class="text-xs text-gray-500 dark:text-gray-400">
 							{filteredTransactions().filter((t) => t.type === 'income').length} transactions
 						</p>
 					{/if}
@@ -163,7 +163,7 @@
 		</div>
 
 		<!-- Total Expenses -->
-		<div class="rounded-lg border-l-4 border-red-500 bg-white p-6 shadow-lg">
+		<div class="rounded-lg border-l-4 border-red-500 bg-white p-6 shadow-lg dark:bg-gray-800">
 			<div class="flex items-center">
 				<div class="flex-shrink-0">
 					<svg class="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,12 +172,12 @@
 					</svg>
 				</div>
 				<div class="ml-4">
-					<p class="text-sm font-medium text-gray-600">Total Expenses</p>
+					<p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Expenses</p>
 					<p class="text-2xl font-bold text-red-600">
 						{formatCurrency(filteredSummary().expenses)}
 					</p>
 					{#if selectedTimeRange !== 'all'}
-						<p class="text-xs text-gray-500">
+						<p class="text-xs text-gray-500 dark:text-gray-400">
 							{filteredTransactions().filter((t) => t.type === 'expense').length} transactions
 						</p>
 					{/if}
@@ -187,7 +187,7 @@
 
 		<!-- Balance -->
 		<div
-			class={`rounded-lg border-l-4 bg-white p-6 shadow-lg ${filteredSummary().balance >= 0 ? 'border-blue-500' : 'border-yellow-500'}`}
+			class={`rounded-lg border-l-4 bg-white p-6 shadow-lg dark:bg-gray-800 ${filteredSummary().balance >= 0 ? 'border-blue-500' : 'border-yellow-500'}`}
 		>
 			<div class="flex items-center">
 				<div class="flex-shrink-0">
@@ -206,7 +206,7 @@
 					</svg>
 				</div>
 				<div class="ml-4">
-					<p class="text-sm font-medium text-gray-600">Balance</p>
+					<p class="text-sm font-medium text-gray-600 dark:text-gray-300">Balance</p>
 					<p
 						class={`text-2xl font-bold ${filteredSummary().balance >= 0 ? 'text-blue-600' : 'text-yellow-600'}`}
 					>
@@ -225,8 +225,8 @@
 	<!-- Category Breakdowns -->
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 		<!-- Income by Category -->
-		<div class="rounded-lg bg-white p-6 shadow-lg">
-			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800">
+		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800 dark:text-white">
 				<svg
 					class="mr-2 h-5 w-5 text-green-500"
 					fill="none"
@@ -277,8 +277,8 @@
 		</div>
 
 		<!-- Expenses by Category -->
-		<div class="rounded-lg bg-white p-6 shadow-lg">
-			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800">
+		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800 dark:text-white">
 				<svg
 					class="mr-2 h-5 w-5 text-red-500"
 					fill="none"
@@ -326,24 +326,24 @@
 
 	<!-- Quick Stats -->
 	{#if transactions.length > 0}
-		<div class="rounded-lg bg-white p-6 shadow-lg">
-			<h3 class="mb-4 text-lg font-semibold text-gray-800">Quick Stats</h3>
+		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+			<h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">Quick Stats</h3>
 			<div class="grid grid-cols-2 gap-4 md:grid-cols-4">
 				<div class="text-center">
 					<p class="text-2xl font-bold text-blue-600">{filteredTransactions().length}</p>
-					<p class="text-sm text-gray-600">Transactions</p>
+					<p class="text-sm text-gray-600 dark:text-gray-300">Transactions</p>
 				</div>
 				<div class="text-center">
 					<p class="text-2xl font-bold text-green-600">
 						{filteredTransactions().filter((t) => t.type === 'income').length}
 					</p>
-					<p class="text-sm text-gray-600">Income</p>
+					<p class="text-sm text-gray-600 dark:text-gray-300">Income</p>
 				</div>
 				<div class="text-center">
 					<p class="text-2xl font-bold text-red-600">
 						{filteredTransactions().filter((t) => t.type === 'expense').length}
 					</p>
-					<p class="text-sm text-gray-600">Expenses</p>
+					<p class="text-sm text-gray-600 dark:text-gray-300">Expenses</p>
 				</div>
 				<div class="text-center">
 					<p class="text-2xl font-bold text-purple-600">
@@ -351,7 +351,7 @@
 							? (filteredSummary().income / filteredSummary().expenses).toFixed(2)
 							: '∞'}
 					</p>
-					<p class="text-sm text-gray-600">Income/Expense Ratio</p>
+					<p class="text-sm text-gray-600 dark:text-gray-300">Income/Expense Ratio</p>
 				</div>
 			</div>
 		</div>

@@ -166,14 +166,14 @@
 
 <div class="space-y-6">
 	<!-- Date Filter Controls -->
-	<div class="rounded-lg bg-white p-6 shadow-lg">
-		<h3 class="mb-4 text-lg font-semibold text-gray-800">Time Period</h3>
+	<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+		<h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">Time Period</h3>
 		<div class="mb-4 flex flex-wrap gap-3">
 			<button
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					dateFilter === 'all'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 				onclick={() => (dateFilter = 'all')}
 			>
@@ -183,7 +183,7 @@
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					dateFilter === 'week'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 				onclick={() => (dateFilter = 'week')}
 			>
@@ -193,7 +193,7 @@
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					dateFilter === 'month'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 				onclick={() => (dateFilter = 'month')}
 			>
@@ -203,7 +203,7 @@
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					dateFilter === 'quarter'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 				onclick={() => (dateFilter = 'quarter')}
 			>
@@ -213,7 +213,7 @@
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					dateFilter === 'year'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 				onclick={() => (dateFilter = 'year')}
 			>
@@ -223,7 +223,7 @@
 				class={`rounded-md px-4 py-2 font-medium transition-colors ${
 					dateFilter === 'custom'
 						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
 				}`}
 				onclick={() => (dateFilter = 'custom')}
 			>
@@ -234,27 +234,33 @@
 		{#if dateFilter === 'custom'}
 			<div class="flex items-center gap-4">
 				<div>
-					<label for="start-date" class="mb-1 block text-sm font-medium text-gray-700">From</label>
+					<label
+						for="start-date"
+						class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">From</label
+					>
 					<input
 						id="start-date"
 						type="date"
 						bind:value={customStartDate}
-						class="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						class="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
 					/>
 				</div>
 				<div>
-					<label for="end-date" class="mb-1 block text-sm font-medium text-gray-700">To</label>
+					<label
+						for="end-date"
+						class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">To</label
+					>
 					<input
 						id="end-date"
 						type="date"
 						bind:value={customEndDate}
-						class="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						class="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
 					/>
 				</div>
 			</div>
 		{/if}
 
-		<div class="mt-2 text-sm text-gray-600">
+		<div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
 			Showing {filteredTransactions().length} of {transactions.length} transactions
 		</div>
 	</div>
@@ -262,7 +268,7 @@
 	<!-- Financial Overview Cards -->
 	<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
 		<!-- Total Income -->
-		<div class="rounded-lg border-l-4 border-green-500 bg-white p-6 shadow-lg">
+		<div class="rounded-lg border-l-4 border-green-500 bg-white p-6 shadow-lg dark:bg-gray-800">
 			<div class="flex items-center">
 				<div class="flex-shrink-0">
 					<svg class="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -282,7 +288,7 @@
 		</div>
 
 		<!-- Total Expenses -->
-		<div class="rounded-lg border-l-4 border-red-500 bg-white p-6 shadow-lg">
+		<div class="rounded-lg border-l-4 border-red-500 bg-white p-6 shadow-lg dark:bg-gray-800">
 			<div class="flex items-center">
 				<div class="flex-shrink-0">
 					<svg class="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -303,7 +309,7 @@
 
 		<!-- Balance -->
 		<div
-			class={`rounded-lg border-l-4 bg-white p-6 shadow-lg ${summary().balance >= 0 ? 'border-blue-500' : 'border-yellow-500'}`}
+			class={`rounded-lg border-l-4 bg-white p-6 shadow-lg dark:bg-gray-800 ${summary().balance >= 0 ? 'border-blue-500' : 'border-yellow-500'}`}
 		>
 			<div class="flex items-center">
 				<div class="flex-shrink-0">
@@ -337,7 +343,7 @@
 	{#if spendingInsights()}
 		{@const insights = spendingInsights()}
 		{#if insights}
-			<div class="rounded-lg bg-white p-6 shadow-lg">
+			<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
 				<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800">
 					<svg
 						class="mr-2 h-5 w-5 text-purple-500"
@@ -382,8 +388,8 @@
 
 	<!-- Monthly Trends -->
 	{#if monthlyTrends().length > 1}
-		<div class="rounded-lg bg-white p-6 shadow-lg">
-			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800">
+		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800 dark:text-white">
 				<svg
 					class="mr-2 h-5 w-5 text-blue-500"
 					fill="none"
@@ -430,8 +436,8 @@
 	<!-- Category Breakdowns -->
 	<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 		<!-- Income by Category -->
-		<div class="rounded-lg bg-white p-6 shadow-lg">
-			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800">
+		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800 dark:text-white">
 				<svg
 					class="mr-2 h-5 w-5 text-green-500"
 					fill="none"
@@ -468,8 +474,8 @@
 		</div>
 
 		<!-- Expenses by Category -->
-		<div class="rounded-lg bg-white p-6 shadow-lg">
-			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800">
+		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800 dark:text-white">
 				<svg
 					class="mr-2 h-5 w-5 text-red-500"
 					fill="none"
@@ -508,8 +514,8 @@
 
 	<!-- Quick Stats -->
 	{#if filteredTransactions().length > 0}
-		<div class="rounded-lg bg-white p-6 shadow-lg">
-			<h3 class="mb-4 text-lg font-semibold text-gray-800">Quick Stats</h3>
+		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+			<h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">Quick Stats</h3>
 			<div class="grid grid-cols-2 gap-4 text-center md:grid-cols-4">
 				<div>
 					<p class="text-2xl font-bold text-blue-600">{filteredTransactions().length}</p>

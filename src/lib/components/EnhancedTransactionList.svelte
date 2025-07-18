@@ -182,11 +182,11 @@
 	}
 </script>
 
-<div class="rounded-lg bg-white p-6 shadow-lg">
+<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
 	<!-- Header with Summary -->
 	<div class="mb-6 flex items-center justify-between">
 		<div>
-			<h2 class="text-2xl font-bold text-gray-800">All Transactions</h2>
+			<h2 class="text-2xl font-bold text-gray-800 dark:text-white">All Transactions</h2>
 			<div class="mt-2 flex gap-4 text-sm">
 				<span class="text-green-600">Income: {formatCurrency(filteredSummary().income)}</span>
 				<span class="text-red-600">Expenses: {formatCurrency(filteredSummary().expenses)}</span>
@@ -254,7 +254,7 @@
 
 			<button
 				onclick={() => (sortOrder = sortOrder === 'asc' ? 'desc' : 'asc')}
-				class="rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
+				class="rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 				title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
 			>
 				{sortOrder === 'asc' ? '↑' : '↓'}

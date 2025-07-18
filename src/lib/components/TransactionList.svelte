@@ -167,7 +167,7 @@
 	}
 </script>
 
-<div class="rounded-lg bg-white p-6 shadow-lg">
+<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
 	<!-- Search and Filter Controls -->
 	<div class="mb-6 space-y-4">
 		<!-- Primary Filters -->
@@ -215,7 +215,7 @@
 
 			<button
 				onclick={() => (sortOrder = sortOrder === 'asc' ? 'desc' : 'asc')}
-				class="rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
+				class="rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 			>
 				{sortOrder === 'asc' ? '↑' : '↓'}
 			</button>
