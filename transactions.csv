@@ -1,0 +1,7 @@
+type,amount,category,description,date
+income,100.0,gift,Gift from Brother,2025-06-06
+income,2100.0,salary,Salary,2025-06-06
+expense,200.0,food,Food,2025-06-06
+income,1200.0,salary,Salary,2025-05-06
+income,100.0,Luke's Clothes,I had to buy Luke clothes because he burned them all,2025-06-06
+income,400.0,Salary,Dividends,2025-07-18
