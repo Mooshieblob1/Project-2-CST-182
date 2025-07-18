@@ -14,20 +14,13 @@
 
 	let { transactions }: Props = $props();
 
-	function formatCurrency(amount: number): string {
-		return new Intl.NumberFormat('en-US', {
-			style: 'currency',
-			currency: 'USD'
-		}).format(amount);
-	}
-
 	// Date filter options
 	let dateFilter = $state('all');
 	let customStartDate = $state('');
 	let customEndDate = $state('');
 
 	// Filtered transactions based on date
-	let filteredTransactions = $derived(() => {
+	let filteredTransactions = $derived.by(() => {
 		if (dateFilter === 'all') return transactions;
 
 		const now = new Date();
@@ -65,12 +58,12 @@
 	});
 
 	// Calculate financial summary
-	let summary = $derived(() => {
-		const income = filteredTransactions()
+	let summary = $derived.by(() => {
+		const income = filteredTransactions
 			.filter((t) => t.type === 'income')
 			.reduce((sum, t) => sum + t.amount, 0);
 
-		const expenses = filteredTransactions()
+		const expenses = filteredTransactions
 			.filter((t) => t.type === 'expense')
 			.reduce((sum, t) => sum + t.amount, 0);
 
@@ -80,10 +73,10 @@
 	});
 
 	// Calculate expense breakdown by category
-	let expenseByCategory = $derived(() => {
+	let expenseByCategory = $derived.by(() => {
 		const categoryTotals: Record<string, number> = {};
 
-		filteredTransactions()
+		filteredTransactions
 			.filter((t) => t.type === 'expense')
 			.forEach((t) => {
 				categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
@@ -95,10 +88,10 @@
 	});
 
 	// Calculate income breakdown by category
-	let incomeByCategory = $derived(() => {
+	let incomeByCategory = $derived.by(() => {
 		const categoryTotals: Record<string, number> = {};
 
-		filteredTransactions()
+		filteredTransactions
 			.filter((t) => t.type === 'income')
 			.forEach((t) => {
 				categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
@@ -109,437 +102,335 @@
 			.sort((a, b) => b.amount - a.amount);
 	});
 
-	// Monthly trends - optimized
-	let monthlyTrends = $derived(() => {
-		const filtered = filteredTransactions();
-		if (filtered.length === 0) return [];
+	function createChartData(data: { category: string; amount: number }[]) {
+		return data.map((d) => ({ name: d.category, value: d.amount }));
+	}
 
-		const monthlyData: Record<string, { income: number; expenses: number; balance: number }> = {};
+	let incomeChartData = $derived(createChartData(incomeByCategory));
+	let expenseChartData = $derived(createChartData(expenseByCategory));
 
-		for (const t of filtered) {
-			const date = new Date(t.date);
-			const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+	const colors = [
+		'#34D399',
+		'#60A5FA',
+		'#FBBF24',
+		'#F87171',
+		'#A78BFA',
+		'#F472B6',
+		'#4ADE80',
+		'#2DD4BF',
+		'#a855f7',
+		'#ec4899'
+	];
 
-			if (!monthlyData[monthKey]) {
-				monthlyData[monthKey] = { income: 0, expenses: 0, balance: 0 };
+	function calculateOffsets(data: { name: string; value: number }[]) {
+		const total = data.reduce((sum, d) => sum + d.value, 0);
+		if (total === 0) return data.map(() => ({ percentage: 0, dasharray: '0 100', offset: 0 }));
+
+		let offset = 0;
+		return data.map((d) => {
+			const percentage = (d.value / total) * 100;
+			const dasharray = `${percentage} ${100 - percentage}`;
+			const currentOffset = offset;
+			offset += percentage;
+			return { percentage, dasharray, offset: currentOffset };
+		});
+	}
+
+	let incomeOffsets = $derived(calculateOffsets(incomeChartData));
+	let expenseOffsets = $derived(calculateOffsets(expenseChartData));
+
+	function formatCurrency(value: number) {
+		return new Intl.NumberFormat('en-US', {
+			style: 'currency',
+			currency: 'USD'
+		}).format(value);
+	}
+
+	let timeSeriesData = $derived.by(() => {
+		const series: Record<string, { date: string; income: number; expenses: number }> = {};
+
+		filteredTransactions.forEach((t) => {
+			const date = t.date.split('T')[0];
+			if (!series[date]) {
+				series[date] = { date, income: 0, expenses: 0 };
 			}
-
 			if (t.type === 'income') {
-				monthlyData[monthKey].income += t.amount;
+				series[date].income += t.amount;
 			} else {
-				monthlyData[monthKey].expenses += t.amount;
+				series[date].expenses += t.amount;
 			}
-		}
+		});
 
-		// Calculate balance after processing all transactions
-		for (const monthKey in monthlyData) {
-			monthlyData[monthKey].balance = monthlyData[monthKey].income - monthlyData[monthKey].expenses;
-		}
-
-		return Object.entries(monthlyData)
-			.map(([month, data]) => ({ month, ...data }))
-			.sort((a, b) => a.month.localeCompare(b.month))
-			.slice(-6); // Last 6 months
-	});
-
-	// Spending insights - optimized
-	let spendingInsights = $derived(() => {
-		const filtered = filteredTransactions();
-		const expenses = filtered.filter((t) => t.type === 'expense');
-		if (expenses.length === 0) return null;
-
-		const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
-		const avgTransaction = totalExpenses / expenses.length;
-		const largestExpense = Math.max(...expenses.map((t) => t.amount));
-		const topCategoryData = expenseByCategory();
-		const topCategory = topCategoryData.length > 0 ? topCategoryData[0] : null;
-
-		return {
-			avgTransaction,
-			largestExpense,
-			topCategory: topCategory?.category || 'N/A',
-			topCategoryAmount: topCategory?.amount || 0,
-			topCategoryPercentage: topCategory ? (topCategory.amount / totalExpenses) * 100 : 0
-		};
+		return Object.values(series).sort(
+			(a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+		);
 	});
 </script>
 
-<div class="space-y-6">
-	<!-- Date Filter Controls -->
-	<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
-		<h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">Time Period</h3>
-		<div class="mb-4 flex flex-wrap gap-3">
-			<button
-				class={`rounded-md px-4 py-2 font-medium transition-colors ${
-					dateFilter === 'all'
-						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-				}`}
-				onclick={() => (dateFilter = 'all')}
-			>
-				All Time
-			</button>
-			<button
-				class={`rounded-md px-4 py-2 font-medium transition-colors ${
-					dateFilter === 'week'
-						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-				}`}
-				onclick={() => (dateFilter = 'week')}
-			>
-				Last 7 Days
-			</button>
-			<button
-				class={`rounded-md px-4 py-2 font-medium transition-colors ${
-					dateFilter === 'month'
-						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-				}`}
-				onclick={() => (dateFilter = 'month')}
-			>
-				This Month
-			</button>
-			<button
-				class={`rounded-md px-4 py-2 font-medium transition-colors ${
-					dateFilter === 'quarter'
-						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-				}`}
-				onclick={() => (dateFilter = 'quarter')}
-			>
-				This Quarter
-			</button>
-			<button
-				class={`rounded-md px-4 py-2 font-medium transition-colors ${
-					dateFilter === 'year'
-						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-				}`}
-				onclick={() => (dateFilter = 'year')}
-			>
-				This Year
-			</button>
-			<button
-				class={`rounded-md px-4 py-2 font-medium transition-colors ${
-					dateFilter === 'custom'
-						? 'bg-blue-500 text-white'
-						: 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-				}`}
-				onclick={() => (dateFilter = 'custom')}
-			>
-				Custom Range
-			</button>
-		</div>
+<div class="space-y-8 rounded-lg bg-gray-800 p-6 text-white shadow-lg">
+	<h2 class="text-3xl font-bold">Financial Analytics</h2>
+
+	<!-- Date Filter -->
+	<div class="flex flex-wrap items-center gap-4 rounded-lg bg-gray-700 p-4">
+		<select
+			bind:value={dateFilter}
+			class="rounded-lg border-gray-600 bg-gray-600 p-2 focus:border-blue-500 focus:ring-blue-500"
+		>
+			<option value="all">All Time</option>
+			<option value="week">Last 7 Days</option>
+			<option value="month">This Month</option>
+			<option value="quarter">This Quarter</option>
+			<option value="year">This Year</option>
+			<option value="custom">Custom Range</option>
+		</select>
 
 		{#if dateFilter === 'custom'}
-			<div class="flex items-center gap-4">
-				<div>
-					<label
-						for="start-date"
-						class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">From</label
-					>
-					<input
-						id="start-date"
-						type="date"
-						bind:value={customStartDate}
-						class="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-					/>
-				</div>
-				<div>
-					<label
-						for="end-date"
-						class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">To</label
-					>
-					<input
-						id="end-date"
-						type="date"
-						bind:value={customEndDate}
-						class="rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-					/>
-				</div>
+			<div class="flex items-center gap-2">
+				<input
+					type="date"
+					bind:value={customStartDate}
+					class="rounded-lg border-gray-500 bg-gray-600 p-2"
+				/>
+				<span>to</span>
+				<input
+					type="date"
+					bind:value={customEndDate}
+					class="rounded-lg border-gray-500 bg-gray-600 p-2"
+				/>
 			</div>
 		{/if}
-
-		<div class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-			Showing {filteredTransactions().length} of {transactions.length} transactions
-		</div>
 	</div>
 
-	<!-- Financial Overview Cards -->
+	<!-- Key Metrics -->
 	<div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-		<!-- Total Income -->
-		<div class="rounded-lg border-l-4 border-green-500 bg-white p-6 shadow-lg dark:bg-gray-800">
+		<div class="rounded-lg bg-green-800 p-6">
+			<p class="text-sm text-green-200">Total Income</p>
+			<p class="text-3xl font-bold">{formatCurrency(summary.income)}</p>
+		</div>
+		<div class="rounded-lg bg-red-800 p-6">
+			<p class="text-sm text-red-200">Total Expenses</p>
+			<p class="text-3xl font-bold">{formatCurrency(summary.expenses)}</p>
+		</div>
+		<div class="rounded-lg bg-blue-800 p-6">
+			<p class="text-sm text-blue-200">Net Balance</p>
+			<p class="text-3xl font-bold">{formatCurrency(summary.balance)}</p>
+		</div>
+	</div>
+
+	<!-- Charts -->
+	<div class="grid grid-cols-1 gap-8 lg:grid-cols-2">
+		<!-- Expense Breakdown -->
+		<div class="rounded-lg bg-gray-700 p-6">
+			<h3 class="mb-4 text-xl font-semibold">Expense Breakdown</h3>
 			<div class="flex items-center">
-				<div class="flex-shrink-0">
-					<svg class="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-						></path>
+				<div class="relative h-48 w-48">
+					<!-- Donut Chart -->
+					<svg viewBox="0 0 100 100" class="h-full w-full">
+						{#if expenseChartData.length > 0}
+							{#each expenseChartData as data, i}
+								<circle
+									cx="50"
+									cy="50"
+									r="45"
+									fill="transparent"
+									stroke-width="10"
+									stroke={colors[i % colors.length]}
+									stroke-dasharray={expenseOffsets[i].dasharray}
+									stroke-dashoffset={-expenseOffsets[i].offset}
+									transform="rotate(-90 50 50)"
+								/>
+							{/each}
+						{/if}
 					</svg>
+					<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+						<p class="text-xs text-gray-400">Total Expenses</p>
+						<p class="text-lg font-bold">{formatCurrency(summary.expenses)}</p>
+					</div>
 				</div>
-				<div class="ml-4">
-					<p class="text-sm font-medium text-gray-600">Total Income</p>
-					<p class="text-2xl font-bold text-green-600">{formatCurrency(summary().income)}</p>
+				<div class="ml-6 flex-1">
+					<!-- Legend -->
+					<ul class="space-y-2">
+						{#each expenseChartData as data, i}
+							<li class="flex items-center">
+								<span
+									class="mr-2 inline-block h-3 w-3 rounded-full"
+									style="background-color: {colors[i % colors.length]};"
+								></span>
+								<span>{data.name}: {formatCurrency(data.value)}</span>
+							</li>
+						{/each}
+					</ul>
 				</div>
 			</div>
 		</div>
 
-		<!-- Total Expenses -->
-		<div class="rounded-lg border-l-4 border-red-500 bg-white p-6 shadow-lg dark:bg-gray-800">
+		<!-- Income Breakdown -->
+		<div class="rounded-lg bg-gray-700 p-6">
+			<h3 class="mb-4 text-xl font-semibold">Income Breakdown</h3>
 			<div class="flex items-center">
-				<div class="flex-shrink-0">
-					<svg class="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
-						></path>
+				<div class="relative h-48 w-48">
+					<!-- Donut Chart -->
+					<svg viewBox="0 0 100 100" class="h-full w-full">
+						{#if incomeChartData.length > 0}
+							{#each incomeChartData as data, i}
+								<circle
+									cx="50"
+									cy="50"
+									r="45"
+									fill="transparent"
+									stroke-width="10"
+									stroke={colors[i % colors.length]}
+									stroke-dasharray={incomeOffsets[i].dasharray}
+									stroke-dashoffset={-incomeOffsets[i].offset}
+									transform="rotate(-90 50 50)"
+								/>
+							{/each}
+						{/if}
 					</svg>
+					<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+						<p class="text-xs text-gray-400">Total Income</p>
+						<p class="text-lg font-bold">{formatCurrency(summary.income)}</p>
+					</div>
 				</div>
-				<div class="ml-4">
-					<p class="text-sm font-medium text-gray-600">Total Expenses</p>
-					<p class="text-2xl font-bold text-red-600">{formatCurrency(summary().expenses)}</p>
-				</div>
-			</div>
-		</div>
-
-		<!-- Balance -->
-		<div
-			class={`rounded-lg border-l-4 bg-white p-6 shadow-lg dark:bg-gray-800 ${summary().balance >= 0 ? 'border-blue-500' : 'border-yellow-500'}`}
-		>
-			<div class="flex items-center">
-				<div class="flex-shrink-0">
-					<svg
-						class={`h-8 w-8 ${summary().balance >= 0 ? 'text-blue-500' : 'text-yellow-500'}`}
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-						></path>
-					</svg>
-				</div>
-				<div class="ml-4">
-					<p class="text-sm font-medium text-gray-600">Balance</p>
-					<p
-						class={`text-2xl font-bold ${summary().balance >= 0 ? 'text-blue-600' : 'text-yellow-600'}`}
-					>
-						{formatCurrency(summary().balance)}
-					</p>
+				<div class="ml-6 flex-1">
+					<!-- Legend -->
+					<ul class="space-y-2">
+						{#each incomeChartData as data, i}
+							<li class="flex items-center">
+								<span
+									class="mr-2 inline-block h-3 w-3 rounded-full"
+									style="background-color: {colors[i % colors.length]};"
+								></span>
+								<span>{data.name}: {formatCurrency(data.value)}</span>
+							</li>
+						{/each}
+					</ul>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<!-- Spending Insights -->
-	{#if spendingInsights()}
-		{@const insights = spendingInsights()}
-		{#if insights}
-			<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
-				<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800">
-					<svg
-						class="mr-2 h-5 w-5 text-purple-500"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-						></path>
-					</svg>
-					Spending Insights
-				</h3>
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-4">
-					<div class="rounded-lg bg-gray-50 p-4 text-center">
-						<p class="text-2xl font-bold text-purple-600">
-							{formatCurrency(insights.avgTransaction)}
-						</p>
-						<p class="text-sm text-gray-600">Avg Transaction</p>
-					</div>
-					<div class="rounded-lg bg-gray-50 p-4 text-center">
-						<p class="text-2xl font-bold text-red-600">{formatCurrency(insights.largestExpense)}</p>
-						<p class="text-sm text-gray-600">Largest Expense</p>
-					</div>
-					<div class="rounded-lg bg-gray-50 p-4 text-center">
-						<p class="text-2xl font-bold text-orange-600 capitalize">{insights.topCategory}</p>
-						<p class="text-sm text-gray-600">Top Category</p>
-					</div>
-					<div class="rounded-lg bg-gray-50 p-4 text-center">
-						<p class="text-2xl font-bold text-indigo-600">
-							{insights.topCategoryPercentage.toFixed(1)}%
-						</p>
-						<p class="text-sm text-gray-600">of Total Spending</p>
-					</div>
-				</div>
-			</div>
-		{/if}
-	{/if}
+	<!-- Income vs Expenses Line Chart -->
+	<div class="rounded-lg bg-gray-700 p-6">
+		<h3 class="mb-4 text-xl font-semibold">Income vs. Expenses Over Time</h3>
+		<div class="h-64">
+			<svg class="h-full w-full" preserveAspectRatio="xMidYMid meet" viewBox="0 0 500 250">
+				{#if timeSeriesData.length > 0}
+					{@const chartWidth = 500}
+					{@const chartHeight = 250}
+					{@const padding = { top: 20, right: 20, bottom: 30, left: 60 }}
 
-	<!-- Monthly Trends -->
-	{#if monthlyTrends().length > 1}
-		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
-			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800 dark:text-white">
-				<svg
-					class="mr-2 h-5 w-5 text-blue-500"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-					></path>
-				</svg>
-				Monthly Trends (Last 6 Months)
-			</h3>
-			<div class="space-y-4">
-				{#each monthlyTrends() as trend}
-					<div class="border-l-4 border-gray-200 pl-4">
-						<div class="mb-2 flex items-center justify-between">
-							<h4 class="font-medium text-gray-800">
-								{new Date(trend.month + '-01').toLocaleDateString('en-US', {
-									year: 'numeric',
-									month: 'long'
+					{@const xMax = chartWidth - padding.left - padding.right}
+					{@const yMax = chartHeight - padding.top - padding.bottom}
+
+					{@const data = timeSeriesData}
+					{@const dates = data.map((d) => new Date(d.date))}
+					{@const maxAmount = Math.max(
+						1,
+						...data.map((d) => d.income),
+						...data.map((d) => d.expenses)
+					)}
+
+					{@const xScale = (date: Date) => {
+						const timeRange = dates[dates.length - 1].getTime() - dates[0].getTime();
+						if (timeRange === 0) return padding.left + xMax / 2;
+						return padding.left + ((date.getTime() - dates[0].getTime()) / timeRange) * xMax;
+					}}
+
+					{@const yScale = (amount: number) => {
+						if (maxAmount === 0) return chartHeight - padding.bottom;
+						return chartHeight - padding.bottom - (amount / maxAmount) * yMax;
+					}}
+
+					<!-- Axes -->
+					<g class="text-xs text-gray-400">
+						<!-- Y-axis -->
+						{#each Array(6) as _, i}
+							{@const y = padding.top + (i * yMax) / 5}
+							<line
+								x1={padding.left}
+								y1={y}
+								x2={chartWidth - padding.right}
+								y2={y}
+								class="stroke-current text-gray-600"
+								stroke-dasharray="2"
+							/>
+							<text x={padding.left - 8} y={y + 4} text-anchor="end" fill="currentColor">
+								{formatCurrency(maxAmount * (1 - i / 5))}
+							</text>
+						{/each}
+						<!-- X-axis -->
+						<line
+							x1={padding.left}
+							y1={chartHeight - padding.bottom}
+							x2={chartWidth - padding.right}
+							y2={chartHeight - padding.bottom}
+							class="stroke-current"
+						/>
+						{#if dates.length > 1}
+							<text
+								x={padding.left}
+								y={chartHeight - padding.bottom + 15}
+								text-anchor="start"
+								fill="currentColor"
+							>
+								{dates[0].toLocaleDateString('en-us', { month: 'short', day: 'numeric' })}
+							</text>
+							<text
+								x={chartWidth - padding.right}
+								y={chartHeight - padding.bottom + 15}
+								text-anchor="end"
+								fill="currentColor"
+							>
+								{dates[dates.length - 1].toLocaleDateString('en-us', {
+									month: 'short',
+									day: 'numeric'
 								})}
-							</h4>
-							<span class={`font-bold ${trend.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-								{formatCurrency(trend.balance)}
-							</span>
-						</div>
-						<div class="grid grid-cols-2 gap-4 text-sm">
-							<div>
-								<span class="text-green-600">Income: {formatCurrency(trend.income)}</span>
-							</div>
-							<div>
-								<span class="text-red-600">Expenses: {formatCurrency(trend.expenses)}</span>
-							</div>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</div>
-	{/if}
+							</text>
+						{/if}
+					</g>
 
-	<!-- Category Breakdowns -->
-	<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-		<!-- Income by Category -->
-		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
-			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800 dark:text-white">
-				<svg
-					class="mr-2 h-5 w-5 text-green-500"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M7 11l5-5m0 0l5 5m-5-5v12"
-					></path>
-				</svg>
-				Income by Category
-			</h3>
-			{#if incomeByCategory().length > 0}
-				<div class="space-y-3">
-					{#each incomeByCategory() as { category, amount }}
-						<div class="flex items-center justify-between">
-							<span class="text-gray-700 capitalize">{category}</span>
-							<span class="font-semibold text-green-600">{formatCurrency(amount)}</span>
-						</div>
-						<div class="h-2 w-full rounded-full bg-gray-200">
-							<div
-								class="h-2 rounded-full bg-green-500"
-								style="width: {summary().income > 0 ? (amount / summary().income) * 100 : 0}%"
-							></div>
-						</div>
-					{/each}
-				</div>
-			{:else}
-				<p class="py-4 text-center text-gray-500">No income data available</p>
-			{/if}
-		</div>
+					<!-- Income Path -->
+					{#if data.length > 1}
+						<path
+							d={`M ${data
+								.map((d) => `${xScale(new Date(d.date))},${yScale(d.income)}`)
+								.join(' L ')}`}
+							fill="none"
+							stroke="#34D399"
+							stroke-width="2"
+						/>
+					{/if}
 
-		<!-- Expenses by Category -->
-		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
-			<h3 class="mb-4 flex items-center text-lg font-semibold text-gray-800 dark:text-white">
-				<svg
-					class="mr-2 h-5 w-5 text-red-500"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M17 13l-5 5m0 0l-5-5m5 5V6"
-					></path>
-				</svg>
-				Expenses by Category
-			</h3>
-			{#if expenseByCategory().length > 0}
-				<div class="space-y-3">
-					{#each expenseByCategory() as { category, amount }}
-						<div class="flex items-center justify-between">
-							<span class="text-gray-700 capitalize">{category}</span>
-							<span class="font-semibold text-red-600">{formatCurrency(amount)}</span>
-						</div>
-						<div class="h-2 w-full rounded-full bg-gray-200">
-							<div
-								class="h-2 rounded-full bg-red-500"
-								style="width: {summary().expenses > 0 ? (amount / summary().expenses) * 100 : 0}%"
-							></div>
-						</div>
+					<!-- Expense Path -->
+					{#if data.length > 1}
+						<path
+							d={`M ${data
+								.map((d) => `${xScale(new Date(d.date))},${yScale(d.expenses)}`)
+								.join(' L ')}`}
+							fill="none"
+							stroke="#F87171"
+							stroke-width="2"
+						/>
+					{/if}
+
+					<!-- Data Points -->
+					{#each data as d}
+						<circle cx={xScale(new Date(d.date))} cy={yScale(d.income)} r="3" fill="#34D399" />
+						<circle cx={xScale(new Date(d.date))} cy={yScale(d.expenses)} r="3" fill="#F87171" />
 					{/each}
-				</div>
-			{:else}
-				<p class="py-4 text-center text-gray-500">No expense data available</p>
-			{/if}
+				{:else}
+					<text
+						x="250"
+						y="125"
+						text-anchor="middle"
+						fill="currentColor"
+						class="text-lg text-gray-500"
+					>
+						No data for this period
+					</text>
+				{/if}
+			</svg>
 		</div>
 	</div>
-
-	<!-- Quick Stats -->
-	{#if filteredTransactions().length > 0}
-		<div class="rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
-			<h3 class="mb-4 text-lg font-semibold text-gray-800 dark:text-white">Quick Stats</h3>
-			<div class="grid grid-cols-2 gap-4 text-center md:grid-cols-4">
-				<div>
-					<p class="text-2xl font-bold text-blue-600">{filteredTransactions().length}</p>
-					<p class="text-sm text-gray-600">Total Transactions</p>
-				</div>
-				<div>
-					<p class="text-2xl font-bold text-green-600">
-						{filteredTransactions().filter((t) => t.type === 'income').length}
-					</p>
-					<p class="text-sm text-gray-600">Income Entries</p>
-				</div>
-				<div>
-					<p class="text-2xl font-bold text-red-600">
-						{filteredTransactions().filter((t) => t.type === 'expense').length}
-					</p>
-					<p class="text-sm text-gray-600">Expense Entries</p>
-				</div>
-				<div>
-					<p class="text-2xl font-bold text-gray-600">
-						{summary().expenses > 0 ? (summary().income / summary().expenses).toFixed(2) : 'N/A'}
-					</p>
-					<p class="text-sm text-gray-600">Income/Expense Ratio</p>
-				</div>
-			</div>
-		</div>
-	{/if}
 </div>

@@ -5,15 +5,12 @@
 	import EnhancedTransactionList from '$lib/components/EnhancedTransactionList.svelte';
 	import Summary from '$lib/components/Summary.svelte';
 	import EnhancedSummary from '$lib/components/EnhancedSummary.svelte';
-	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { transactionStore } from '$lib/stores/transactions';
-	import { themeStore } from '$lib/stores/theme';
 	import { loadTransactionsFromCSV, parseCSV } from '$lib/csvLoader';
 	import type { Transaction } from '$lib/stores/transactions';
 
 	let activeTab = $state('add');
 	let transactions = $derived($transactionStore);
-	let theme = $derived($themeStore);
 
 	// Save to localStorage whenever transactions change
 	$effect(() => {
@@ -205,9 +202,6 @@
 					Personal Finance Tracker
 				</h1>
 				<p class="text-gray-600 dark:text-gray-300">Manage your income and expenses with ease</p>
-			</div>
-			<div class="ml-4">
-				<ThemeToggle />
 			</div>
 		</div>
 
