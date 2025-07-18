@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { transactionStore } from '../stores/transactions';
+	import { transactionStore } from '$lib';
 
 	interface Transaction {
 		id: string;
@@ -20,16 +20,18 @@
 	let sortOrder = $state('desc');
 	let filterType = $state('all');
 	let searchTerm = $state('');
-	let selectedCategory = $state('all');
-	let dateFrom = $state('');
-	let dateTo = $state('');
+	let categoryFilter = $state('all');
 	let amountMin = $state('');
 	let amountMax = $state('');
+	let dateFrom = $state('');
+	let dateTo = $state('');
+	let showAdvancedFilters = $state(false);
 
-	// Get unique categories for filter
-	let categories = $derived(() => {
-		const uniqueCategories = [...new Set(transactions.map((t) => t.category))];
-		return uniqueCategories.sort();
+	// Get unique categories for filter dropdown
+	let availableCategories = $derived(() => {
+		const categories = new Set<string>();
+		transactions.forEach((t) => categories.add(t.category));
+		return Array.from(categories).sort();
 	});
 
 	// Enhanced filtered and sorted transactions
@@ -42,8 +44,8 @@
 		}
 
 		// Filter by category
-		if (selectedCategory !== 'all') {
-			filtered = filtered.filter((t) => t.category === selectedCategory);
+		if (categoryFilter !== 'all') {
+			filtered = filtered.filter((t) => t.category === categoryFilter);
 		}
 
 		// Search filter
@@ -51,26 +53,27 @@
 			const search = searchTerm.toLowerCase();
 			filtered = filtered.filter(
 				(t) =>
-					t.description.toLowerCase().includes(search) ||
-					t.category.toLowerCase().includes(search) ||
-					t.type.toLowerCase().includes(search)
+					t.description.toLowerCase().includes(search) || t.category.toLowerCase().includes(search)
 			);
 		}
 
-		// Date range filter
-		if (dateFrom) {
-			filtered = filtered.filter((t) => new Date(t.date) >= new Date(dateFrom));
-		}
-		if (dateTo) {
-			filtered = filtered.filter((t) => new Date(t.date) <= new Date(dateTo));
+		// Amount range filter
+		if (amountMin || amountMax) {
+			const min = amountMin ? parseFloat(amountMin) : 0;
+			const max = amountMax ? parseFloat(amountMax) : Infinity;
+			filtered = filtered.filter((t) => t.amount >= min && t.amount <= max);
 		}
 
-		// Amount range filter
-		if (amountMin) {
-			filtered = filtered.filter((t) => t.amount >= parseFloat(amountMin));
-		}
-		if (amountMax) {
-			filtered = filtered.filter((t) => t.amount <= parseFloat(amountMax));
+		// Date range filter
+		if (dateFrom || dateTo) {
+			const fromDate = dateFrom ? new Date(dateFrom) : new Date('1900-01-01');
+			const toDate = dateTo ? new Date(dateTo) : new Date('2100-01-01');
+			toDate.setHours(23, 59, 59, 999); // End of day
+
+			filtered = filtered.filter((t) => {
+				const transactionDate = new Date(t.date);
+				return transactionDate >= fromDate && transactionDate <= toDate;
+			});
 		}
 
 		// Sort
@@ -91,8 +94,8 @@
 		});
 	});
 
-	// Calculate totals for filtered transactions
-	let filteredTotals = $derived(() => {
+	// Summary of filtered transactions
+	let filteredSummary = $derived(() => {
 		const income = filteredTransactions()
 			.filter((t) => t.type === 'income')
 			.reduce((sum, t) => sum + t.amount, 0);
@@ -129,17 +132,7 @@
 		}
 	}
 
-	function clearFilters() {
-		filterType = 'all';
-		selectedCategory = 'all';
-		searchTerm = '';
-		dateFrom = '';
-		dateTo = '';
-		amountMin = '';
-		amountMax = '';
-	}
-
-	function exportFiltered() {
+	function exportFilteredData() {
 		if (filteredTransactions().length === 0) {
 			alert('No transactions to export');
 			return;
@@ -165,12 +158,68 @@
 		document.body.removeChild(a);
 		window.URL.revokeObjectURL(url);
 	}
+
+	function clearAllFilters() {
+		filterType = 'all';
+		categoryFilter = 'all';
+		searchTerm = '';
+		amountMin = '';
+		amountMax = '';
+		dateFrom = '';
+		dateTo = '';
+	}
+
+	function toggleAdvancedFilters() {
+		showAdvancedFilters = !showAdvancedFilters;
+		if (!showAdvancedFilters) {
+			// Clear advanced filters when hiding
+			categoryFilter = 'all';
+			amountMin = '';
+			amountMax = '';
+			dateFrom = '';
+			dateTo = '';
+		}
+	}
 </script>
 
 <div class="rounded-lg bg-white p-6 shadow-lg">
+	<!-- Header with Summary -->
+	<div class="mb-6 flex items-center justify-between">
+		<div>
+			<h2 class="text-2xl font-bold text-gray-800">All Transactions</h2>
+			<div class="mt-2 flex gap-4 text-sm">
+				<span class="text-green-600">Income: {formatCurrency(filteredSummary().income)}</span>
+				<span class="text-red-600">Expenses: {formatCurrency(filteredSummary().expenses)}</span>
+				<span
+					class={`font-semibold ${filteredSummary().balance >= 0 ? 'text-blue-600' : 'text-yellow-600'}`}
+				>
+					Balance: {formatCurrency(filteredSummary().balance)}
+				</span>
+			</div>
+		</div>
+		<div class="flex gap-2">
+			{#if filteredTransactions().length > 0}
+				<button
+					onclick={exportFilteredData}
+					class="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-green-600"
+				>
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+						></path>
+					</svg>
+					Export Filtered
+				</button>
+			{/if}
+		</div>
+	</div>
+
 	<!-- Search and Filter Controls -->
 	<div class="mb-6 space-y-4">
-		<!-- Primary Filters -->
+		<!-- Basic Filters -->
 		<div class="flex flex-col gap-4 sm:flex-row">
 			<!-- Search -->
 			<div class="flex-1">
@@ -192,17 +241,6 @@
 				<option value="expense">Expenses Only</option>
 			</select>
 
-			<!-- Filter by Category -->
-			<select
-				bind:value={selectedCategory}
-				class="rounded-md border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-			>
-				<option value="all">All Categories</option>
-				{#each categories() as category}
-					<option value={category}>{category}</option>
-				{/each}
-			</select>
-
 			<!-- Sort Options -->
 			<select
 				bind:value={sortBy}
@@ -211,127 +249,108 @@
 				<option value="date">Sort by Date</option>
 				<option value="amount">Sort by Amount</option>
 				<option value="category">Sort by Category</option>
+				<option value="description">Sort by Description</option>
 			</select>
 
 			<button
 				onclick={() => (sortOrder = sortOrder === 'asc' ? 'desc' : 'asc')}
 				class="rounded-md bg-gray-100 px-4 py-2 text-gray-700 transition-colors hover:bg-gray-200"
+				title={sortOrder === 'asc' ? 'Sort Ascending' : 'Sort Descending'}
 			>
 				{sortOrder === 'asc' ? '↑' : '↓'}
+			</button>
+
+			<button
+				onclick={toggleAdvancedFilters}
+				class="rounded-md bg-blue-100 px-4 py-2 text-blue-700 transition-colors hover:bg-blue-200"
+			>
+				{showAdvancedFilters ? 'Hide' : 'Advanced'}
 			</button>
 		</div>
 
 		<!-- Advanced Filters -->
-		<details class="group">
-			<summary class="mb-3 cursor-pointer text-sm font-medium text-gray-600 hover:text-gray-800">
-				Advanced Filters {filteredTransactions().length !== transactions.length ? '(Active)' : ''}
-			</summary>
-			<div class="grid grid-cols-1 gap-4 rounded-md bg-gray-50 p-4 md:grid-cols-2 lg:grid-cols-4">
-				<!-- Date Range -->
-				<div>
-					<label for="dateFrom" class="mb-1 block text-xs font-medium text-gray-600"
-						>From Date</label
-					>
-					<input
-						id="dateFrom"
-						type="date"
-						bind:value={dateFrom}
-						class="w-full rounded border border-gray-300 px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-					/>
-				</div>
-				<div>
-					<label for="dateTo" class="mb-1 block text-xs font-medium text-gray-600">To Date</label>
-					<input
-						id="dateTo"
-						type="date"
-						bind:value={dateTo}
-						class="w-full rounded border border-gray-300 px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-					/>
-				</div>
+		{#if showAdvancedFilters}
+			<div class="space-y-4 rounded-lg bg-gray-50 p-4">
+				<h4 class="font-medium text-gray-800">Advanced Filters</h4>
 
-				<!-- Amount Range -->
-				<div>
-					<label for="amountMin" class="mb-1 block text-xs font-medium text-gray-600"
-						>Min Amount</label
-					>
-					<input
-						id="amountMin"
-						type="number"
-						bind:value={amountMin}
-						step="0.01"
-						placeholder="0.00"
-						class="w-full rounded border border-gray-300 px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-					/>
-				</div>
-				<div>
-					<label for="amountMax" class="mb-1 block text-xs font-medium text-gray-600"
-						>Max Amount</label
-					>
-					<input
-						id="amountMax"
-						type="number"
-						bind:value={amountMax}
-						step="0.01"
-						placeholder="0.00"
-						class="w-full rounded border border-gray-300 px-3 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-					/>
-				</div>
-			</div>
-		</details>
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+					<!-- Category Filter -->
+					<div>
+						<label for="category-filter" class="mb-1 block text-sm font-medium text-gray-700"
+							>Category</label
+						>
+						<select
+							id="category-filter"
+							bind:value={categoryFilter}
+							class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+						>
+							<option value="all">All Categories</option>
+							{#each availableCategories() as category}
+								<option value={category}>{category}</option>
+							{/each}
+						</select>
+					</div>
 
-		<!-- Summary and Actions -->
-		{#if transactions.length > 0}
-			<div
-				class="flex flex-col items-start justify-between gap-4 text-sm sm:flex-row sm:items-center"
-			>
-				<div class="text-gray-600">
-					<p class="font-medium">
-						Showing {filteredTransactions().length} of {transactions.length} transactions
-					</p>
-					{#if filteredTransactions().length !== transactions.length}
-						<div class="mt-1 space-y-1 text-xs">
-							<p>
-								Income: <span class="font-medium text-green-600"
-									>{formatCurrency(filteredTotals().income)}</span
-								>
-							</p>
-							<p>
-								Expenses: <span class="font-medium text-red-600"
-									>{formatCurrency(filteredTotals().expenses)}</span
-								>
-							</p>
-							<p>
-								Balance: <span
-									class="font-medium {filteredTotals().balance >= 0
-										? 'text-blue-600'
-										: 'text-yellow-600'}">{formatCurrency(filteredTotals().balance)}</span
-								>
-							</p>
+					<!-- Amount Range -->
+					<div>
+						<span class="mb-1 block text-sm font-medium text-gray-700">Amount Range</span>
+						<div class="flex gap-2">
+							<input
+								type="number"
+								bind:value={amountMin}
+								placeholder="Min"
+								step="0.01"
+								aria-label="Minimum amount"
+								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+							/>
+							<input
+								type="number"
+								bind:value={amountMax}
+								placeholder="Max"
+								step="0.01"
+								aria-label="Maximum amount"
+								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+							/>
 						</div>
-					{/if}
+					</div>
+
+					<!-- Date Range -->
+					<div>
+						<span class="mb-1 block text-sm font-medium text-gray-700">Date Range</span>
+						<div class="flex gap-2">
+							<input
+								type="date"
+								bind:value={dateFrom}
+								aria-label="From date"
+								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+							/>
+							<input
+								type="date"
+								bind:value={dateTo}
+								aria-label="To date"
+								class="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+							/>
+						</div>
+					</div>
 				</div>
-				<div class="flex gap-2">
-					{#if filteredTransactions().length !== transactions.length}
-						<button
-							onclick={clearFilters}
-							class="text-sm font-medium text-blue-600 hover:text-blue-800"
-						>
-							Clear Filters
-						</button>
-						<button
-							onclick={exportFiltered}
-							class="rounded bg-green-500 px-3 py-1 text-sm text-white transition-colors hover:bg-green-600"
-						>
-							Export Filtered
-						</button>
-					{/if}
+
+				<div class="flex justify-end">
 					<button
-						onclick={clearAllTransactions}
-						class="text-sm font-medium text-red-600 hover:text-red-800"
+						onclick={clearAllFilters}
+						class="rounded-md bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
 					>
-						Clear All
+						Clear All Filters
 					</button>
 				</div>
+			</div>
+		{/if}
+
+		{#if transactions.length > 0}
+			<div class="flex items-center justify-between text-sm text-gray-600">
+				<span>Showing {filteredTransactions().length} of {transactions.length} transactions</span>
+				<button onclick={clearAllTransactions} class="font-medium text-red-600 hover:text-red-800">
+					Clear All Transactions
+				</button>
 			</div>
 		{/if}
 	</div>
@@ -371,6 +390,12 @@
 				</svg>
 				<h3 class="mb-2 text-lg font-medium text-gray-700">No matching transactions</h3>
 				<p class="text-gray-500">Try adjusting your search or filter criteria</p>
+				<button
+					onclick={clearAllFilters}
+					class="mt-4 rounded-md bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
+				>
+					Clear Filters
+				</button>
 			{/if}
 		</div>
 	{:else}
@@ -380,25 +405,45 @@
 				<thead class="bg-gray-50">
 					<tr>
 						<th
-							class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>Date</th
+							class="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100"
+							onclick={() => {
+								sortBy = 'date';
+								sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+							}}
 						>
+							Date {sortBy === 'date' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+						</th>
 						<th
 							class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
 							>Type</th
 						>
 						<th
-							class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>Amount</th
+							class="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100"
+							onclick={() => {
+								sortBy = 'amount';
+								sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+							}}
 						>
+							Amount {sortBy === 'amount' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+						</th>
 						<th
-							class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>Category</th
+							class="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100"
+							onclick={() => {
+								sortBy = 'category';
+								sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+							}}
 						>
+							Category {sortBy === 'category' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+						</th>
 						<th
-							class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
-							>Description</th
+							class="cursor-pointer px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase hover:bg-gray-100"
+							onclick={() => {
+								sortBy = 'description';
+								sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+							}}
 						>
+							Description {sortBy === 'description' ? (sortOrder === 'asc' ? '↑' : '↓') : ''}
+						</th>
 						<th
 							class="px-4 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase"
 							>Actions</th
@@ -406,8 +451,8 @@
 					</tr>
 				</thead>
 				<tbody class="divide-y divide-gray-200">
-					{#each filteredTransactions() as transaction}
-						<tr class="hover:bg-gray-50">
+					{#each filteredTransactions() as transaction, index}
+						<tr class={`hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-25'}`}>
 							<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-700">
 								{formatDate(transaction.date)}
 							</td>
@@ -430,13 +475,16 @@
 							<td class="px-4 py-4 text-sm whitespace-nowrap text-gray-700 capitalize">
 								{transaction.category}
 							</td>
-							<td class="px-4 py-4 text-sm text-gray-700">
+							<td
+								class="max-w-xs truncate px-4 py-4 text-sm text-gray-700"
+								title={transaction.description}
+							>
 								{transaction.description}
 							</td>
 							<td class="px-4 py-4 text-sm whitespace-nowrap">
 								<button
 									onclick={() => deleteTransaction(transaction.id)}
-									class="text-red-600 transition-colors hover:text-red-800"
+									class="rounded p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-800"
 									aria-label="Delete transaction"
 								>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -458,7 +506,7 @@
 		<!-- Mobile Card View -->
 		<div class="space-y-4 md:hidden">
 			{#each filteredTransactions() as transaction}
-				<div class="rounded-lg border border-gray-200 p-4">
+				<div class="rounded-lg border border-gray-200 p-4 transition-shadow hover:shadow-md">
 					<div class="mb-2 flex items-start justify-between">
 						<div>
 							<span
@@ -480,7 +528,7 @@
 							</span>
 							<button
 								onclick={() => deleteTransaction(transaction.id)}
-								class="p-1 text-red-600 transition-colors hover:text-red-800"
+								class="rounded p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-800"
 								aria-label="Delete transaction"
 							>
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

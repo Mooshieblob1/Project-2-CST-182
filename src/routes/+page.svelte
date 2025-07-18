@@ -2,11 +2,14 @@
 	import { onMount } from 'svelte';
 	import TransactionForm from '$lib/components/TransactionForm.svelte';
 	import TransactionList from '$lib/components/TransactionList.svelte';
+	import EnhancedTransactionList from '$lib/components/EnhancedTransactionList.svelte';
 	import Summary from '$lib/components/Summary.svelte';
+	import EnhancedSummary from '$lib/components/EnhancedSummary.svelte';
 	import { transactionStore } from '$lib/stores/transactions';
+	import type { Transaction } from '$lib/stores/transactions';
 
-	let activeTab = 'add';
-	let transactions = $state([]);
+	let activeTab = $state('add');
+	let transactions = $state<Transaction[]>([]);
 
 	onMount(() => {
 		// Load transactions from localStorage on component mount
@@ -22,7 +25,7 @@
 		}
 
 		// Subscribe to transaction store changes
-		return transactionStore.subscribe((value) => {
+		return transactionStore.subscribe((value: Transaction[]) => {
 			transactions = value;
 			// Save to localStorage whenever transactions change
 			localStorage.setItem('finance-transactions', JSON.stringify(value));
@@ -102,46 +105,49 @@
 				</button>
 				<button
 					class={`rounded-md px-6 py-3 font-medium transition-all duration-200 ${
+						activeTab === 'analytics'
+							? 'bg-blue-500 text-white shadow-md'
+							: 'text-gray-600 hover:text-blue-500'
+					}`}
+					onclick={() => setActiveTab('analytics')}
+				>
+					Analytics
+				</button>
+				<button
+					class={`rounded-md px-6 py-3 font-medium transition-all duration-200 ${
 						activeTab === 'transactions'
 							? 'bg-blue-500 text-white shadow-md'
 							: 'text-gray-600 hover:text-blue-500'
 					}`}
 					onclick={() => setActiveTab('transactions')}
 				>
-					All Transactions
+					Transactions
+				</button>
+				<button
+					class={`rounded-md px-6 py-3 font-medium transition-all duration-200 ${
+						activeTab === 'manage'
+							? 'bg-blue-500 text-white shadow-md'
+							: 'text-gray-600 hover:text-blue-500'
+					}`}
+					onclick={() => setActiveTab('manage')}
+				>
+					Manage
 				</button>
 			</div>
 		</div>
 
 		<!-- Content -->
-		<div class="mx-auto max-w-4xl">
+		<div class="mx-auto max-w-6xl">
 			{#if activeTab === 'add'}
 				<TransactionForm />
 			{:else if activeTab === 'summary'}
 				<Summary {transactions} />
+			{:else if activeTab === 'analytics'}
+				<EnhancedSummary {transactions} />
 			{:else if activeTab === 'transactions'}
-				<div class="space-y-4">
-					<div class="flex items-center justify-between">
-						<h2 class="text-2xl font-bold text-gray-800">All Transactions</h2>
-						{#if transactions.length > 0}
-							<button
-								onclick={downloadTransactions}
-								class="flex items-center gap-2 rounded-lg bg-green-500 px-4 py-2 text-white transition-colors duration-200 hover:bg-green-600"
-							>
-								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
-										d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-									></path>
-								</svg>
-								Download CSV
-							</button>
-						{/if}
-					</div>
-					<TransactionList {transactions} />
-				</div>
+				<TransactionList {transactions} />
+			{:else if activeTab === 'manage'}
+				<EnhancedTransactionList {transactions} />
 			{/if}
 		</div>
 
