@@ -109,11 +109,14 @@
 			.sort((a, b) => b.amount - a.amount);
 	});
 
-	// Monthly trends
+	// Monthly trends - optimized
 	let monthlyTrends = $derived(() => {
+		const filtered = filteredTransactions();
+		if (filtered.length === 0) return [];
+
 		const monthlyData: Record<string, { income: number; expenses: number; balance: number }> = {};
 
-		filteredTransactions().forEach((t) => {
+		for (const t of filtered) {
 			const date = new Date(t.date);
 			const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
@@ -126,8 +129,12 @@
 			} else {
 				monthlyData[monthKey].expenses += t.amount;
 			}
+		}
+
+		// Calculate balance after processing all transactions
+		for (const monthKey in monthlyData) {
 			monthlyData[monthKey].balance = monthlyData[monthKey].income - monthlyData[monthKey].expenses;
-		});
+		}
 
 		return Object.entries(monthlyData)
 			.map(([month, data]) => ({ month, ...data }))
@@ -135,15 +142,17 @@
 			.slice(-6); // Last 6 months
 	});
 
-	// Spending insights
+	// Spending insights - optimized
 	let spendingInsights = $derived(() => {
-		const expenses = filteredTransactions().filter((t) => t.type === 'expense');
+		const filtered = filteredTransactions();
+		const expenses = filtered.filter((t) => t.type === 'expense');
 		if (expenses.length === 0) return null;
 
 		const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
 		const avgTransaction = totalExpenses / expenses.length;
 		const largestExpense = Math.max(...expenses.map((t) => t.amount));
-		const topCategory = expenseByCategory()[0];
+		const topCategoryData = expenseByCategory();
+		const topCategory = topCategoryData.length > 0 ? topCategoryData[0] : null;
 
 		return {
 			avgTransaction,
