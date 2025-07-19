@@ -1,3 +1,8 @@
+"""Personal Finance Tracker - CLI application for managing income and expenses.
+
+This module provides functionality to track financial transactions, categorize 
+expenses, view summaries, and persist data to CSV files.
+"""
 import csv
 import os
 from datetime import datetime
@@ -5,37 +10,24 @@ from datetime import datetime
 transactions = []
 
 def load_from_file(filename="transactions.csv"):
-    """
-    Load transactions from a CSV file into the global transactions list.
+    """Load transaction data from CSV file into global transactions list.
     
     Args:
-        filename (str): The name of the CSV file to load from. Defaults to "transactions.csv".
-    
-    Returns:
-        None: The function modifies the global transactions list in place.
+        filename: CSV file path, defaults to "transactions.csv"
     """
     if not os.path.exists(filename):
-        return  # No file yet, so nothing to load
+        return
 
     with open(filename, mode='r', newline='') as file:
         reader = csv.DictReader(file)
         for row in reader:
-            # Convert amount from string to float
             row["amount"] = float(row["amount"])
             transactions.append(row)
     print(f"Loaded {len(transactions)} transactions from file.")
 
 
 def display_menu():
-    """
-    Display the main menu options for the Personal Finance Tracker.
-    
-    Prints the available menu options to the console:
-    1. Add Transaction
-    2. View Summary
-    3. Save & Exit
-    4. View All Transactions
-    """
+    """Display the main menu options to the user."""
     print("\n--- Personal Finance Tracker ---")
     print("1. Add Transaction")
     print("2. View Summary")
@@ -43,18 +35,10 @@ def display_menu():
     print("4. View All Transactions")
 
 def add_transaction():
-    """
-    Add a new income or expense transaction to the global transactions list.
+    """Collect and validate user input to create a new transaction.
     
-    Prompts the user for transaction details including:
-    - Type (income or expense)
-    - Amount (must be positive)
-    - Category (e.g., food, rent, salary)
-    - Description
-    - Date (YYYY-MM-DD format, defaults to today if not provided)
-    
-    Validates all inputs and adds the transaction to the global list if valid.
-    Prints error messages for invalid inputs.
+    Prompts for transaction type, amount, category, description, and date.
+    Validates all inputs before adding to transactions list.
     """
     t_type = input("Type (income/expense): ").strip().lower()
     if t_type not in ['income', 'expense']:
@@ -76,7 +60,6 @@ def add_transaction():
     if not date:
         date = datetime.today().strftime('%Y-%m-%d')
 
-    # Validate date format
     try:
         datetime.strptime(date, '%Y-%m-%d')
     except ValueError:
@@ -93,17 +76,7 @@ def add_transaction():
     print("Transaction added.")
 
 def view_summary():
-    """
-    Display a financial summary of all transactions.
-    
-    Calculates and displays:
-    - Total income
-    - Total expenses
-    - Current balance (income - expenses)
-    - Expenses broken down by category
-    
-    The summary is printed to the console in a formatted layout.
-    """
+    """Calculate and display financial overview with category breakdown."""
     income = sum(t["amount"] for t in transactions if t["type"] == "income")
     expense = sum(t["amount"] for t in transactions if t["type"] == "expense")
     balance = income - expense
@@ -127,45 +100,24 @@ def view_summary():
         print("No expense data available.")
 
 def view_all_transactions():
-    """
-    Display all transactions in a formatted table.
-    
-    Shows all transactions with the following columns:
-    - Date
-    - Type (Income/Expense)
-    - Amount
-    - Category
-    - Description
-    
-    If no transactions exist, displays a message indicating this.
-    """
+    """Display all transactions in a formatted table."""
     if not transactions:
         print("No transactions to show.")
         return
 
     print("\n--- All Transactions ---")
-    # Header
     print(f"{'Date':<12} {'Type':<8} {'Amount':>10}  {'Category':<15} {'Description':<30}")
-    print("-" * 78) # Adjusted separator length
+    print("-" * 78)
 
     for t in transactions:
-        # Data rows
         print(f"{t['date']:<12} {t['type'].capitalize():<8} ${t['amount']:>9.2f}  {t['category']:<15} {t['description']:<30}")
 
 
 def save_to_file(filename="transactions.csv"):
-    """
-    Save all transactions to a CSV file.
+    """Save all transactions to CSV file.
     
     Args:
-        filename (str): The name of the CSV file to save to. Defaults to "transactions.csv".
-    
-    The CSV file will include the following columns:
-    - type: "income" or "expense"
-    - amount: Transaction amount as float
-    - category: Transaction category
-    - description: Transaction description
-    - date: Transaction date in YYYY-MM-DD format
+        filename: Output file path. Defaults to "transactions.csv".
     """
     with open(filename, mode='w', newline='') as file:
         writer = csv.DictWriter(file, fieldnames=["type", "amount", "category", "description", "date"])
@@ -175,18 +127,12 @@ def save_to_file(filename="transactions.csv"):
     print("Data saved to file.")
 
 def main():
-    """
-    Main function that runs the Personal Finance Tracker application.
+    """Run the main application loop.
     
-    Loads existing transactions from file, then displays a menu loop allowing users to:
-    - Add new transactions
-    - View financial summary
-    - View all transactions
-    - Save data and exit
-    
-    The loop continues until the user chooses to save and exit (option 3).
+    Loads existing transactions and presents an interactive menu allowing users
+    to add transactions, view summaries, view all transactions, or save and exit.
     """
-    load_from_file() # Load transactions at the start
+    load_from_file()
     while True:
         display_menu()
         choice = input("Choose an option (1–4): ").strip()
